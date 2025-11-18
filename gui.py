@@ -4,7 +4,7 @@ Graphical User Interface for Windows Action Recorder
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, filedialog
+from tkinter import ttk, messagebox, simpledialog, filedialog, scrolledtext
 import threading
 from recorder import ActionRecorder
 from player import ActionPlayer
@@ -12,6 +12,8 @@ from recording_manager import RecordingManager
 from hotkey_manager import HotkeyRecorderController
 from scheduler import AutomationScheduler, ScheduleBuilder
 from image_recognition import ImageRecognition
+from macro_editor import MacroEditor
+from recording_preview import RecordingPreview
 
 
 class ActionRecorderGUI:
@@ -59,6 +61,8 @@ class ActionRecorderGUI:
         self.create_recorder_tab()
         self.create_player_tab()
         self.create_recordings_tab()
+        self.create_macro_editor_tab()
+        self.create_preview_tab()
         self.create_scheduler_tab()
         self.create_settings_tab()
 
@@ -202,6 +206,96 @@ class ActionRecorderGUI:
         ttk.Button(frame_buttons, text="▶ Load & Play", command=self.load_and_play_selected).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_buttons, text="🗑 Delete", command=self.delete_selected_recording).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_buttons, text="✏ Rename", command=self.rename_selected_recording).pack(side=tk.LEFT, padx=5)
+
+    def create_macro_editor_tab(self):
+        """Create macro editor tab"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="Macro Editor")
+
+        # Load recording section
+        frame_load = ttk.LabelFrame(tab, text="Load Recording", padding=10)
+        frame_load.pack(fill=tk.X, padx=10, pady=10)
+
+        ttk.Label(frame_load, text="Slot Name:").pack(side=tk.LEFT, padx=5)
+        self.editor_slot_entry = ttk.Entry(frame_load, width=30)
+        self.editor_slot_entry.insert(0, "default")
+        self.editor_slot_entry.pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(frame_load, text="Load for Editing", command=self.load_for_editing).pack(side=tk.LEFT, padx=5)
+
+        # Actions list
+        frame_actions = ttk.LabelFrame(tab, text="Actions", padding=10)
+        frame_actions.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        columns = ('Index', 'Time', 'Type', 'Details')
+        self.editor_tree = ttk.Treeview(frame_actions, columns=columns, show='headings', height=15)
+
+        self.editor_tree.heading('Index', text='Index')
+        self.editor_tree.heading('Time', text='Time (s)')
+        self.editor_tree.heading('Type', text='Action Type')
+        self.editor_tree.heading('Details', text='Details')
+
+        self.editor_tree.column('Index', width=60)
+        self.editor_tree.column('Time', width=80)
+        self.editor_tree.column('Type', width=120)
+        self.editor_tree.column('Details', width=400)
+
+        self.editor_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar = ttk.Scrollbar(frame_actions, orient=tk.VERTICAL, command=self.editor_tree.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.editor_tree.configure(yscrollcommand=scrollbar.set)
+
+        # Editor buttons
+        frame_editor_buttons = ttk.Frame(tab)
+        frame_editor_buttons.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Button(frame_editor_buttons, text="Delete Selected", command=self.editor_delete_action).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_editor_buttons, text="Insert Delay", command=self.editor_insert_delay).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_editor_buttons, text="Remove Mouse Moves", command=self.editor_remove_mouse_moves).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_editor_buttons, text="Simplify", command=self.editor_simplify).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_editor_buttons, text="Save Changes", command=self.editor_save_changes).pack(side=tk.LEFT, padx=5)
+
+        # Initialize editor state
+        self.current_editor = None
+        self.editor_slot_name = None
+
+    def create_preview_tab(self):
+        """Create preview tab"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="Preview")
+
+        # Load recording section
+        frame_load = ttk.LabelFrame(tab, text="Load Recording", padding=10)
+        frame_load.pack(fill=tk.X, padx=10, pady=10)
+
+        ttk.Label(frame_load, text="Slot Name:").pack(side=tk.LEFT, padx=5)
+        self.preview_slot_entry = ttk.Entry(frame_load, width=30)
+        self.preview_slot_entry.insert(0, "default")
+        self.preview_slot_entry.pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(frame_load, text="Load for Preview", command=self.load_for_preview).pack(side=tk.LEFT, padx=5)
+
+        # Preview display
+        frame_display = ttk.LabelFrame(tab, text="Preview Display", padding=10)
+        frame_display.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.preview_text = scrolledtext.ScrolledText(frame_display, wrap=tk.WORD, height=20)
+        self.preview_text.pack(fill=tk.BOTH, expand=True)
+
+        # Preview buttons
+        frame_preview_buttons = ttk.Frame(tab)
+        frame_preview_buttons.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Button(frame_preview_buttons, text="Summary", command=self.preview_show_summary).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_preview_buttons, text="Timeline", command=self.preview_show_timeline).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_preview_buttons, text="Mouse Path", command=self.preview_show_mouse_path).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_preview_buttons, text="Keyboard", command=self.preview_show_keyboard).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_preview_buttons, text="Hotspots", command=self.preview_show_hotspots).pack(side=tk.LEFT, padx=5)
+
+        # Initialize preview state
+        self.current_preview = None
+        self.preview_slot_name = None
 
     def create_scheduler_tab(self):
         """Create scheduler tab"""
@@ -501,6 +595,239 @@ class ActionRecorderGUI:
                 '✓' if job['enabled'] else '✗',
                 job['run_count']
             ))
+
+    # Macro Editor methods
+    def load_for_editing(self):
+        """Load recording for editing"""
+        slot_name = self.editor_slot_entry.get()
+        if not slot_name:
+            messagebox.showerror("Error", "Please enter a slot name")
+            return
+
+        actions = self.recording_manager.load_recording(slot_name)
+        if not actions:
+            messagebox.showerror("Error", f"Recording '{slot_name}' not found")
+            return
+
+        self.current_editor = MacroEditor()
+        self.current_editor.load_recording(actions)
+        self.editor_slot_name = slot_name
+
+        self.refresh_editor_view()
+        self.update_status(f"Loaded '{slot_name}' for editing")
+
+    def refresh_editor_view(self):
+        """Refresh editor tree view"""
+        for item in self.editor_tree.get_children():
+            self.editor_tree.delete(item)
+
+        if not self.current_editor:
+            return
+
+        actions = self.current_editor.get_actions()
+        for i, action in enumerate(actions[:100]):  # Limit to first 100 for performance
+            timestamp = f"{action['timestamp']:.2f}"
+            action_type = action['type']
+
+            # Format details
+            if action_type == 'mouse_move':
+                details = f"({action['x']}, {action['y']})"
+            elif action_type == 'mouse_click':
+                details = f"{action['button']} at ({action['x']}, {action['y']})"
+            elif action_type == 'mouse_scroll':
+                details = f"dx={action['dx']}, dy={action['dy']}"
+            elif action_type in ['key_press', 'key_release']:
+                details = f"key='{action['key']}'"
+            else:
+                details = ""
+
+            self.editor_tree.insert('', tk.END, values=(i, timestamp, action_type, details))
+
+    def editor_delete_action(self):
+        """Delete selected action"""
+        selection = self.editor_tree.selection()
+        if not selection or not self.current_editor:
+            messagebox.showwarning("Warning", "Please select an action")
+            return
+
+        item = self.editor_tree.item(selection[0])
+        index = int(item['values'][0])
+
+        if self.current_editor.delete_action(index):
+            self.refresh_editor_view()
+            self.update_status(f"Deleted action at index {index}")
+
+    def editor_insert_delay(self):
+        """Insert delay after selected action"""
+        selection = self.editor_tree.selection()
+        if not selection or not self.current_editor:
+            messagebox.showwarning("Warning", "Please select an action")
+            return
+
+        item = self.editor_tree.item(selection[0])
+        index = int(item['values'][0])
+
+        delay = simpledialog.askfloat("Insert Delay", "Enter delay in seconds:", minvalue=0.1)
+        if delay:
+            if self.current_editor.insert_delay(index, delay):
+                self.refresh_editor_view()
+                self.update_status(f"Inserted {delay}s delay after action {index}")
+
+    def editor_remove_mouse_moves(self):
+        """Remove all mouse movements"""
+        if not self.current_editor:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        if messagebox.askyesno("Confirm", "Remove all mouse movements?"):
+            count = self.current_editor.remove_mouse_movements()
+            self.refresh_editor_view()
+            self.update_status(f"Removed {count} mouse movements")
+
+    def editor_simplify(self):
+        """Simplify recording"""
+        if not self.current_editor:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        count = self.current_editor.simplify_recording()
+        self.refresh_editor_view()
+        self.update_status(f"Simplified recording (removed {count} actions)")
+
+    def editor_save_changes(self):
+        """Save edited recording"""
+        if not self.current_editor or not self.editor_slot_name:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.recording_manager.save_recording(self.editor_slot_name, self.current_editor.get_actions())
+        messagebox.showinfo("Success", f"Changes saved to '{self.editor_slot_name}'")
+        self.update_status(f"Saved changes to '{self.editor_slot_name}'")
+
+    # Preview methods
+    def load_for_preview(self):
+        """Load recording for preview"""
+        slot_name = self.preview_slot_entry.get()
+        if not slot_name:
+            messagebox.showerror("Error", "Please enter a slot name")
+            return
+
+        actions = self.recording_manager.load_recording(slot_name)
+        if not actions:
+            messagebox.showerror("Error", f"Recording '{slot_name}' not found")
+            return
+
+        self.current_preview = RecordingPreview()
+        self.current_preview.load_recording(actions)
+        self.preview_slot_name = slot_name
+
+        self.update_status(f"Loaded '{slot_name}' for preview")
+
+    def preview_show_summary(self):
+        """Show preview summary"""
+        if not self.current_preview:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.preview_text.delete("1.0", tk.END)
+
+        import io
+        import sys
+
+        # Capture stdout
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        self.current_preview.show_summary()
+
+        sys.stdout = old_stdout
+        output = buffer.getvalue()
+
+        self.preview_text.insert("1.0", output)
+
+    def preview_show_timeline(self):
+        """Show preview timeline"""
+        if not self.current_preview:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.preview_text.delete("1.0", tk.END)
+
+        import io
+        import sys
+
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        self.current_preview.show_timeline(20)
+
+        sys.stdout = old_stdout
+        output = buffer.getvalue()
+
+        self.preview_text.insert("1.0", output)
+
+    def preview_show_mouse_path(self):
+        """Show mouse path"""
+        if not self.current_preview:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.preview_text.delete("1.0", tk.END)
+
+        import io
+        import sys
+
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        self.current_preview.show_mouse_path(10)
+
+        sys.stdout = old_stdout
+        output = buffer.getvalue()
+
+        self.preview_text.insert("1.0", output)
+
+    def preview_show_keyboard(self):
+        """Show keyboard sequence"""
+        if not self.current_preview:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.preview_text.delete("1.0", tk.END)
+
+        import io
+        import sys
+
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        self.current_preview.show_keyboard_sequence()
+
+        sys.stdout = old_stdout
+        output = buffer.getvalue()
+
+        self.preview_text.insert("1.0", output)
+
+    def preview_show_hotspots(self):
+        """Show click hotspots"""
+        if not self.current_preview:
+            messagebox.showwarning("Warning", "No recording loaded")
+            return
+
+        self.preview_text.delete("1.0", tk.END)
+
+        import io
+        import sys
+
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        self.current_preview.show_hotspots()
+
+        sys.stdout = old_stdout
+        output = buffer.getvalue()
+
+        self.preview_text.insert("1.0", output)
 
     # Settings methods
     def toggle_hotkeys(self):

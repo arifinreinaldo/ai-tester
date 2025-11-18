@@ -1,6 +1,6 @@
-# Windows Action Recorder & Player Pro v2.0
+# Windows Action Recorder & Player Pro v2.1
 
-A comprehensive Python-based automation tool that records your mouse and keyboard actions and replays them with advanced features including hotkeys, scheduling, image recognition, and conditional logic.
+A comprehensive Python-based automation tool that records your mouse and keyboard actions and replays them with advanced features including hotkeys, scheduling, image recognition, macro editing, and visual previews.
 
 ## 🌟 Features
 
@@ -11,6 +11,8 @@ A comprehensive Python-based automation tool that records your mouse and keyboar
 - **🎯 Optimized Recording**: Automatically reduces excessive mouse movements
 
 ### Advanced Features
+- **✏ Macro Editor**: Edit recordings without re-recording (NEW!)
+- **👁 Recording Preview**: Visualize actions before execution (NEW!)
 - **⌨ Global Hotkeys**: Control recording/playback with F9/F10/F11
 - **🔁 Interval Repetition**: Repeat actions at specified intervals
 - **🎲 Random Delays**: Add human-like delays between actions
@@ -141,7 +143,80 @@ Example workflow:
 2. Use "Click on image" feature
 3. Bot will find and click the button
 
-### 7. Multiple Recording Slots
+### 7. Macro Editor (NEW!)
+
+**GUI**: Macro Editor tab
+**CLI**: Select option 8 from main menu
+
+Edit recordings without re-recording:
+
+**Editing Operations:**
+- **Delete Actions**: Remove specific actions by index
+- **Delete Range**: Remove multiple actions at once
+- **Insert Delays**: Add pauses between actions
+- **Remove Mouse Moves**: Strip all mouse movements
+- **Simplify**: Remove duplicate/redundant actions
+- **Scale Speed**: Speed up or slow down entire recording
+- **Undo/Redo**: Undo mistakes while editing
+- **Statistics**: View action breakdown
+
+**Use Cases:**
+- Fix mistakes in recording without re-doing everything
+- Remove unwanted mouse movements
+- Add strategic delays
+- Optimize recording size
+- Combine multiple recordings
+
+**Example Workflow:**
+```
+1. Record your actions (accidentally move mouse around)
+2. Open Macro Editor → Load recording
+3. Remove all mouse movements
+4. Insert 2s delay after action #10
+5. Delete actions 50-60 (typo correction)
+6. Save changes
+```
+
+### 8. Recording Preview (NEW!)
+
+**GUI**: Preview tab
+**CLI**: Select option 9 from main menu
+
+Visualize recordings before execution:
+
+**Preview Options:**
+- **Summary**: Total actions, duration, action breakdown
+- **Timeline**: Visual bar chart of activity over time
+- **Detailed View**: Action-by-action breakdown with timestamps
+- **Mouse Path**: See where mouse moved and clicked
+- **Keyboard Sequence**: View all keystrokes in order
+- **Action Frequency**: How often each action type occurs
+- **Delays Analysis**: Find long pauses in recording
+- **Click Hotspots**: See where you clicked most
+
+**Benefits:**
+- Review what will happen before running
+- Identify mistakes before automation runs
+- Understand recording structure
+- Find optimization opportunities
+- Debug problematic recordings
+
+**Example Preview Output:**
+```
+RECORDING SUMMARY
+====================================
+Total Actions:  247
+Duration:       45.3 seconds
+Avg Speed:      5.4 actions/second
+
+Action Breakdown:
+  mouse_move          180 (72.9%)
+  mouse_click          45 (18.2%)
+  key_press            15 ( 6.1%)
+  key_release          15 ( 6.1%)
+```
+
+### 9. Multiple Recording Slots
 
 **GUI**: Recordings tab shows all slots
 **CLI**: Select option 4 from main menu
@@ -183,11 +258,13 @@ Features:
 ```
 ai-tester/
 ├── main.py                    # Simple CLI interface
-├── main_enhanced.py           # Advanced CLI interface
-├── gui.py                     # GUI interface
+├── main_enhanced.py           # Advanced CLI interface with all features
+├── gui.py                     # Full-featured GUI interface
 ├── recorder.py                # Recording functionality
 ├── player.py                  # Playback functionality
 ├── recording_manager.py       # Multiple slots management
+├── macro_editor.py            # Edit recordings (NEW!)
+├── recording_preview.py       # Visualize recordings (NEW!)
 ├── hotkey_manager.py          # Global hotkeys
 ├── scheduler.py               # Task scheduling
 ├── image_recognition.py       # Image-based automation
@@ -374,4 +451,5 @@ schedule_config.json  # Scheduled jobs
 
 ---
 
-**Windows Action Recorder & Player Pro v2.0** - Powerful automation made simple! 🚀
+**Windows Action Recorder & Player Pro v2.1** - Powerful automation made simple! 🚀
+✨ **New in v2.1**: Macro Editor & Recording Preview!

@@ -11,6 +11,8 @@ from recording_manager import RecordingManager
 from hotkey_manager import HotkeyRecorderController
 from scheduler import AutomationScheduler, ScheduleBuilder
 from image_recognition import ImageRecognition
+from macro_editor import MacroEditor
+from recording_preview import RecordingPreview
 
 
 def print_banner():
@@ -33,14 +35,16 @@ def print_main_menu():
     print("5.  ⌨  Hotkey Mode (F9/F10/F11)")
     print("6.  📅 Scheduler (Run at specific times)")
     print("7.  🖼  Image Recognition Tools")
-    print("8.  ⚙  Settings & Options")
-    print("9.  ℹ  View Recording Info")
-    print("10. 🖥  Launch GUI")
+    print("8.  ✏  Macro Editor (Edit Recordings)")
+    print("9.  👁  Preview Recording (Visualize)")
+    print("10. ⚙  Settings & Options")
+    print("11. ℹ  View Recording Info")
+    print("12. 🖥  Launch GUI")
     print("0.  🚪 Exit")
     print("=" * 70)
 
 
-def get_user_choice(max_choice=10):
+def get_user_choice(max_choice=12):
     """Get user menu choice"""
     while True:
         try:
@@ -497,6 +501,150 @@ def view_recording_info(recording_manager):
         print(f"  - {action_type}: {count}")
 
 
+def macro_editor_menu(recording_manager):
+    """Macro editor menu"""
+    slot_name = input("Enter slot name to edit (or press Enter for 'default'): ").strip()
+    if not slot_name:
+        slot_name = "default"
+
+    actions = recording_manager.load_recording(slot_name)
+    if not actions:
+        return
+
+    editor = MacroEditor()
+    editor.load_recording(actions)
+
+    while True:
+        print("\n" + "=" * 70)
+        print(f"MACRO EDITOR - Editing: {slot_name}")
+        print("=" * 70)
+        print("1.  List actions")
+        print("2.  Delete action")
+        print("3.  Delete range")
+        print("4.  Insert delay")
+        print("5.  Remove mouse movements")
+        print("6.  Simplify recording")
+        print("7.  Scale speed")
+        print("8.  View statistics")
+        print("9.  Undo last edit")
+        print("10. Save changes")
+        print("11. Save as new slot")
+        print("0.  Back (discard changes)")
+        print("=" * 70)
+
+        choice = get_user_choice(11)
+
+        if choice == '0':
+            if editor.has_changes():
+                confirm = input("You have unsaved changes. Discard? (y/n): ").strip().lower()
+                if confirm == 'y':
+                    break
+            else:
+                break
+        elif choice == '1':
+            start = int(input("Start index (default 0): ").strip() or "0")
+            count = int(input("How many to show (default 20): ").strip() or "20")
+            editor.list_actions(start, count)
+        elif choice == '2':
+            index = int(input("Enter action index to delete: ").strip())
+            editor.delete_action(index)
+        elif choice == '3':
+            start = int(input("Enter start index: ").strip())
+            end = int(input("Enter end index: ").strip())
+            editor.delete_range(start, end)
+        elif choice == '4':
+            index = int(input("Insert delay after which action index: ").strip())
+            delay = float(input("Enter delay in seconds: ").strip())
+            editor.insert_delay(index, delay)
+        elif choice == '5':
+            editor.remove_mouse_movements()
+        elif choice == '6':
+            editor.simplify_recording()
+        elif choice == '7':
+            multiplier = float(input("Enter speed multiplier (0.5=slower, 2.0=faster): ").strip())
+            editor.scale_speed(multiplier)
+        elif choice == '8':
+            stats = editor.get_statistics()
+            print("\n" + "=" * 70)
+            print("RECORDING STATISTICS")
+            print("=" * 70)
+            print(f"Total actions: {stats['total_actions']}")
+            print(f"Duration: {stats['duration']:.2f}s")
+            print("\nAction types:")
+            for action_type, count in stats['action_types'].items():
+                print(f"  {action_type}: {count}")
+        elif choice == '9':
+            editor.undo()
+        elif choice == '10':
+            recording_manager.save_recording(slot_name, editor.get_actions())
+            print(f"✓ Changes saved to '{slot_name}'")
+        elif choice == '11':
+            new_slot = input("Enter new slot name: ").strip()
+            if new_slot:
+                recording_manager.save_recording(new_slot, editor.get_actions())
+                print(f"✓ Saved as '{new_slot}'")
+
+
+def preview_recording_menu(recording_manager):
+    """Preview recording menu"""
+    slot_name = input("Enter slot name to preview (or press Enter for 'default'): ").strip()
+    if not slot_name:
+        slot_name = "default"
+
+    actions = recording_manager.load_recording(slot_name)
+    if not actions:
+        return
+
+    preview = RecordingPreview()
+    preview.load_recording(actions)
+
+    while True:
+        print("\n" + "=" * 70)
+        print(f"RECORDING PREVIEW - Viewing: {slot_name}")
+        print("=" * 70)
+        print("1. Show summary")
+        print("2. Show timeline")
+        print("3. Show detailed view")
+        print("4. Show mouse path")
+        print("5. Show keyboard sequence")
+        print("6. Show action frequency")
+        print("7. Show delays analysis")
+        print("8. Show click hotspots")
+        print("9. Export text report")
+        print("0. Back to main menu")
+        print("=" * 70)
+
+        choice = get_user_choice(9)
+
+        if choice == '0':
+            break
+        elif choice == '1':
+            preview.show_summary()
+        elif choice == '2':
+            segments = int(input("Enter number of segments (default 20): ").strip() or "20")
+            preview.show_timeline(segments)
+        elif choice == '3':
+            start = float(input("Start time in seconds (default 0): ").strip() or "0")
+            end = float(input("End time in seconds (press Enter for end): ").strip() or str(actions[-1]['timestamp']))
+            max_actions = int(input("Max actions to show (default 50): ").strip() or "50")
+            preview.show_detailed_view(float(start), float(end), max_actions)
+        elif choice == '4':
+            sample = int(input("Sample rate (default 10): ").strip() or "10")
+            preview.show_mouse_path(sample)
+        elif choice == '5':
+            preview.show_keyboard_sequence()
+        elif choice == '6':
+            preview.show_action_frequency()
+        elif choice == '7':
+            preview.show_delays_analysis()
+        elif choice == '8':
+            preview.show_hotspots()
+        elif choice == '9':
+            filename = input("Enter filename (e.g., report.txt): ").strip()
+            if filename:
+                preview.export_text_report(filename)
+
+
 def launch_gui():
     """Launch the GUI"""
     print("\nLaunching GUI...")
@@ -520,7 +668,7 @@ def main():
 
     while True:
         print_main_menu()
-        choice = get_user_choice(10)
+        choice = get_user_choice(12)
 
         if choice == '0':
             print("\nThank you for using Windows Action Recorder & Player Pro!")
@@ -541,10 +689,14 @@ def main():
         elif choice == '7':
             image_recognition_menu()
         elif choice == '8':
-            settings_menu(player)
+            macro_editor_menu(recording_manager)
         elif choice == '9':
-            view_recording_info(recording_manager)
+            preview_recording_menu(recording_manager)
         elif choice == '10':
+            settings_menu(player)
+        elif choice == '11':
+            view_recording_info(recording_manager)
+        elif choice == '12':
             launch_gui()
 
 
