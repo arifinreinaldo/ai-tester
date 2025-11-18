@@ -4,6 +4,7 @@ Replays recorded mouse and keyboard actions
 """
 
 import time
+import random
 from pynput import mouse, keyboard
 
 
@@ -12,10 +13,31 @@ class ActionPlayer:
         self.actions = []
         self.mouse_controller = mouse.Controller()
         self.keyboard_controller = keyboard.Controller()
+        self.random_delay_enabled = False
+        self.random_delay_min = 0.1
+        self.random_delay_max = 0.5
 
     def load_actions(self, actions):
         """Load actions to be played"""
         self.actions = actions
+
+    def enable_random_delays(self, min_delay=0.1, max_delay=0.5):
+        """
+        Enable random delays between actions
+
+        Args:
+            min_delay: Minimum random delay in seconds
+            max_delay: Maximum random delay in seconds
+        """
+        self.random_delay_enabled = True
+        self.random_delay_min = min_delay
+        self.random_delay_max = max_delay
+        print(f"Random delays enabled: {min_delay}s - {max_delay}s")
+
+    def disable_random_delays(self):
+        """Disable random delays"""
+        self.random_delay_enabled = False
+        print("Random delays disabled")
 
     def play(self, speed_multiplier=1.0):
         """
@@ -43,6 +65,11 @@ class ActionPlayer:
 
             if delay > 0:
                 time.sleep(delay)
+
+            # Add random delay if enabled
+            if self.random_delay_enabled:
+                random_delay = random.uniform(self.random_delay_min, self.random_delay_max)
+                time.sleep(random_delay)
 
             # Execute action
             self.execute_action(action)
