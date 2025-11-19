@@ -1,6 +1,6 @@
-# Windows Action Recorder & Player Pro v2.1
+# Windows Action Recorder & Player Pro v2.2
 
-A comprehensive Python-based automation tool that records your mouse and keyboard actions and replays them with advanced features including hotkeys, scheduling, image recognition, macro editing, and visual previews.
+A comprehensive Python-based automation tool that records your mouse and keyboard actions and replays them with advanced features including workflows, hotkeys, scheduling, image recognition, macro editing, and visual previews.
 
 ## 🌟 Features
 
@@ -11,8 +11,9 @@ A comprehensive Python-based automation tool that records your mouse and keyboar
 - **🎯 Optimized Recording**: Automatically reduces excessive mouse movements
 
 ### Advanced Features
-- **✏ Macro Editor**: Edit recordings without re-recording (NEW!)
-- **👁 Recording Preview**: Visualize actions before execution (NEW!)
+- **🔗 Workflow Builder**: Chain multiple recordings into complex automation flows (NEW!)
+- **✏ Macro Editor**: Edit recordings without re-recording
+- **👁 Recording Preview**: Visualize actions before execution
 - **⌨ Global Hotkeys**: Control recording/playback with F9/F10/F11
 - **🔁 Interval Repetition**: Repeat actions at specified intervals
 - **🎲 Random Delays**: Add human-like delays between actions

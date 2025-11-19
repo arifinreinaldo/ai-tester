@@ -13,6 +13,10 @@ from scheduler import AutomationScheduler, ScheduleBuilder
 from image_recognition import ImageRecognition
 from macro_editor import MacroEditor
 from recording_preview import RecordingPreview
+from workflow_builder import (
+    Workflow, WorkflowManager, PlayRecordingStep, DelayStep,
+    ConditionalStep, LoopStep, TryCatchStep
+)
 
 
 def print_banner():
@@ -37,14 +41,15 @@ def print_main_menu():
     print("7.  🖼  Image Recognition Tools")
     print("8.  ✏  Macro Editor (Edit Recordings)")
     print("9.  👁  Preview Recording (Visualize)")
-    print("10. ⚙  Settings & Options")
-    print("11. ℹ  View Recording Info")
-    print("12. 🖥  Launch GUI")
+    print("10. 🔗 Workflow Builder (Chain Recordings)")
+    print("11. ⚙  Settings & Options")
+    print("12. ℹ  View Recording Info")
+    print("13. 🖥  Launch GUI")
     print("0.  🚪 Exit")
     print("=" * 70)
 
 
-def get_user_choice(max_choice=12):
+def get_user_choice(max_choice=13):
     """Get user menu choice"""
     while True:
         try:
@@ -645,6 +650,207 @@ def preview_recording_menu(recording_manager):
                 preview.export_text_report(filename)
 
 
+def workflow_builder_menu(recording_manager, player):
+    """Workflow builder menu"""
+    workflow_manager = WorkflowManager()
+
+    while True:
+        print("\n" + "=" * 70)
+        print("WORKFLOW BUILDER")
+        print("=" * 70)
+        print("1. Create new workflow")
+        print("2. Edit existing workflow")
+        print("3. Execute workflow")
+        print("4. List workflows")
+        print("5. Delete workflow")
+        print("0. Back to main menu")
+        print("=" * 70)
+
+        choice = get_user_choice(5)
+
+        if choice == '0':
+            break
+        elif choice == '1':
+            create_workflow(workflow_manager, recording_manager, player)
+        elif choice == '2':
+            edit_workflow(workflow_manager, recording_manager, player)
+        elif choice == '3':
+            execute_workflow(workflow_manager, recording_manager, player)
+        elif choice == '4':
+            list_workflows(workflow_manager)
+        elif choice == '5':
+            delete_workflow_func(workflow_manager)
+
+
+def create_workflow(workflow_manager, recording_manager, player):
+    """Create a new workflow"""
+    name = input("Enter workflow name: ").strip()
+    if not name:
+        print("Workflow name cannot be empty")
+        return
+
+    workflow = Workflow(name)
+    print(f"\nCreated workflow: {name}")
+
+    # Add steps
+    step_id = 0
+    while True:
+        print("\n" + "=" * 70)
+        print(f"WORKFLOW: {name} (Current steps: {len(workflow.steps)})")
+        print("=" * 70)
+        print("Add step:")
+        print("1. Play recording")
+        print("2. Add delay")
+        print("3. Conditional (if/then/else)")
+        print("4. Loop")
+        print("5. Try/Catch (error handling)")
+        print("6. Save and exit")
+        print("0. Cancel")
+        print("=" * 70)
+
+        choice = input("Enter choice: ").strip()
+
+        if choice == '0':
+            return
+        elif choice == '6':
+            workflow_manager.save_workflow(workflow)
+            print(f"✓ Workflow '{name}' saved!")
+            return
+        elif choice == '1':
+            slot = input("Enter recording slot name: ").strip()
+            speed = float(input("Enter playback speed (default 1.0): ").strip() or "1.0")
+            step_name = input("Step name (optional): ").strip()
+            step = PlayRecordingStep(step_id, slot, speed, step_name or f"Play {slot}")
+            workflow.add_step(step)
+            step_id += 1
+            print(f"✓ Added step: Play '{slot}'")
+        elif choice == '2':
+            seconds = float(input("Enter delay in seconds: ").strip())
+            step_name = input("Step name (optional): ").strip()
+            step = DelayStep(step_id, seconds, step_name or f"Delay {seconds}s")
+            workflow.add_step(step)
+            step_id += 1
+            print(f"✓ Added step: Delay {seconds}s")
+        elif choice == '3':
+            print("\nCondition type:")
+            print("1. Image exists")
+            print("2. Pixel color")
+            cond_choice = input("Enter choice: ").strip()
+
+            if cond_choice == '1':
+                image_path = input("Enter image path: ").strip()
+                confidence = float(input("Confidence (0.0-1.0, default 0.8): ").strip() or "0.8")
+                condition_type = 'image_exists'
+                condition_params = {'image_path': image_path, 'confidence': confidence}
+            elif cond_choice == '2':
+                x = int(input("Enter X coordinate: ").strip())
+                y = int(input("Enter Y coordinate: ").strip())
+                print("Enter expected RGB color (e.g., 255,0,0 for red):")
+                color_input = input().strip()
+                r, g, b = map(int, color_input.split(','))
+                tolerance = int(input("Tolerance (default 10): ").strip() or "10")
+                condition_type = 'pixel_color'
+                condition_params = {'x': x, 'y': y, 'expected_color': (r, g, b), 'tolerance': tolerance}
+            else:
+                print("Invalid choice")
+                continue
+
+            step_name = input("Step name (optional): ").strip()
+            step = ConditionalStep(step_id, condition_type, condition_params, [], [], step_name or "Conditional")
+            workflow.add_step(step)
+            step_id += 1
+            print("✓ Added conditional step (you can add then/else steps later)")
+        elif choice == '4':
+            print("\nLoop type:")
+            print("1. Loop N times")
+            loop_choice = input("Enter choice: ").strip()
+
+            if loop_choice == '1':
+                count = int(input("Enter loop count: ").strip())
+                loop_type = 'count'
+                loop_params = {'count': count}
+            else:
+                print("Invalid choice")
+                continue
+
+            step_name = input("Step name (optional): ").strip()
+            step = LoopStep(step_id, loop_type, loop_params, [], step_name or f"Loop {count}x")
+            workflow.add_step(step)
+            step_id += 1
+            print(f"✓ Added loop step (you can add steps to loop later)")
+        elif choice == '5':
+            retry_count = int(input("Enter retry count (0 for no retry): ").strip() or "0")
+            step_name = input("Step name (optional): ").strip()
+            step = TryCatchStep(step_id, [], [], retry_count, step_name or "Try/Catch")
+            workflow.add_step(step)
+            step_id += 1
+            print("✓ Added try/catch step")
+
+
+def edit_workflow(workflow_manager, recording_manager, player):
+    """Edit existing workflow"""
+    name = input("Enter workflow name to edit: ").strip()
+    workflow = workflow_manager.load_workflow(name)
+
+    if not workflow:
+        return
+
+    print(f"\nEditing workflow: {name}")
+    print(f"Current steps: {len(workflow.steps)}")
+
+    # Simple edit - just show steps
+    for i, step in enumerate(workflow.steps):
+        print(f"{i}. {step.name} ({step.step_type})")
+
+    print("\nEdit options not fully implemented in CLI. Use GUI for advanced editing.")
+    input("Press Enter to continue...")
+
+
+def execute_workflow(workflow_manager, recording_manager, player):
+    """Execute a workflow"""
+    name = input("Enter workflow name to execute: ").strip()
+    workflow = workflow_manager.load_workflow(name)
+
+    if not workflow:
+        return
+
+    print(f"\nAbout to execute workflow: {name}")
+    print(f"Steps: {len(workflow.steps)}")
+
+    confirm = input("Execute? (y/n): ").strip().lower()
+    if confirm == 'y':
+        workflow.execute(recording_manager, player)
+
+
+def list_workflows(workflow_manager):
+    """List all workflows"""
+    workflows = workflow_manager.list_workflows()
+
+    if not workflows:
+        print("\nNo workflows found.")
+        return
+
+    print("\n" + "=" * 70)
+    print("SAVED WORKFLOWS")
+    print("=" * 70)
+    print(f"{'Name':<30} {'Steps':<10} {'Modified'}")
+    print("-" * 70)
+
+    for wf in workflows:
+        print(f"{wf['name']:<30} {wf['steps']:<10} {wf['modified'][:19]}")
+
+    print("=" * 70)
+
+
+def delete_workflow_func(workflow_manager):
+    """Delete a workflow"""
+    name = input("Enter workflow name to delete: ").strip()
+    if name:
+        confirm = input(f"Delete workflow '{name}'? (y/n): ").strip().lower()
+        if confirm == 'y':
+            workflow_manager.delete_workflow(name)
+
+
 def launch_gui():
     """Launch the GUI"""
     print("\nLaunching GUI...")
@@ -668,7 +874,7 @@ def main():
 
     while True:
         print_main_menu()
-        choice = get_user_choice(12)
+        choice = get_user_choice(13)
 
         if choice == '0':
             print("\nThank you for using Windows Action Recorder & Player Pro!")
@@ -693,10 +899,12 @@ def main():
         elif choice == '9':
             preview_recording_menu(recording_manager)
         elif choice == '10':
-            settings_menu(player)
+            workflow_builder_menu(recording_manager, player)
         elif choice == '11':
-            view_recording_info(recording_manager)
+            settings_menu(player)
         elif choice == '12':
+            view_recording_info(recording_manager)
+        elif choice == '13':
             launch_gui()
 
 
